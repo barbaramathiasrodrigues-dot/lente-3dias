@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lente dos 3 Dias - Casa OS</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-pergaminho: #0d0a07;
+      --card-bg: rgba(23, 16, 11, 0.92);
+      --borda-dourada: #c5a059;
+      --borda-glow: rgba(197, 160, 89, 0.35);
+      --texto-primario: #e8d8c8;
+      --texto-dourado: #f0c987;
+      --verde-elfico: #81b29a;
+      --sol-hoje: #f4a261;
+      --fonte-titulo: 'Cinzel Decorative', serif;
+      --fonte-sub: 'Cinzel', serif;
+      --fonte-corpo: 'Quicksand', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-pergaminho);
+      color: var(--texto-primario);
+      font-family: var(--fonte-corpo);
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 650px;
+      background: var(--card-bg);
+      border: 2px solid var(--borda-dourada);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 0 15px var(--borda-glow);
+      backdrop-filter: blur(8px);
+    }
+
+    h2 {
+      font-family: var(--fonte-titulo);
+      color: var(--texto-dourado);
+      font-size: 1.15rem;
+      text-align: center;
+      margin-top: 0;
+      border-bottom: 1px solid var(--borda-dourada);
+      padding-bottom: 8px;
+    }
+
+    .bloco-prep {
+      background: rgba(129, 178, 154, 0.1);
+      border: 1px solid var(--verde-elfico);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 16px;
+    }
+
+    .prep-titulo {
+      font-family: var(--fonte-sub);
+      color: var(--verde-elfico);
+      font-weight: bold;
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-3dias {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .grid-3dias { grid-template-columns: 1fr; }
+    }
+
+    .col-dia {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(197, 160, 89, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .dia-titulo {
+      font-family: var(--fonte-sub);
+      font-size: 0.78rem;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .item-tf {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      background: rgba(0,0,0,0.5);
+      padding: 6px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+      border: 1px solid rgba(197, 160, 89, 0.15);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--borda-dourada);
+      color: var(--texto-primario);
+      border-radius: 4px;
+      padding: 6px;
+      font-family: var(--fonte-corpo);
+      font-size: 0.78rem;
+      box-sizing: border-box;
+      margin-bottom: 6px;
+    }
+
+    .btn-add {
+      width: 100%;
+      background: rgba(197, 160, 89, 0.2);
+      border: 1px solid var(--borda-dourada);
+      color: var(--texto-dourado);
+      font-family: var(--fonte-sub);
+      font-size: 0.72rem;
+      padding: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-del {
+      background: transparent;
+      border: none;
+      color: #e07a5f;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>⏳ Visão dos 3 Dias & Preparações</h2>
+
+    <!-- 🌱 LINHA SUPERIOR DE PREPARAÇÕES (Ações Prévias) -->
+    <div class="bloco-prep">
+      <div class="prep-titulo">
+        <i class="fa-solid fa-seedling"></i> 🌱 Preparações & Antewatch (Para Eventos Próximos)
+      </div>
+      <input type="text" id="input-prep" placeholder="+ Adicionar preparação prévia (ex: Bolsa da Dança, pautas Terapia)..." onkeypress="if(event.key==='Enter') addPrep()" />
+      <div id="lista-prep"></div>
+    </div>
+
+    <!-- 🗓️ GRID DOS 3 DIAS -->
+    <div class="grid-3dias">
+      <!-- HOJE -->
+      <div class="col-dia" style="border-top: 3px solid var(--sol-hoje);">
+        <div class="dia-titulo" style="color: var(--sol-hoje);" id="tit-hoje">HOJE</div>
+        <input type="text" id="input-hoje" placeholder="+ Add em Hoje..." onkeypress="if(event.key==='Enter') addDia('hoje')" />
+        <div id="lista-hoje"></div>
+      </div>
+
+      <!-- AMANHÃ -->
+      <div class="col-dia" style="border-top: 3px solid var(--borda-dourada);">
+        <div class="dia-titulo" style="color: var(--texto-dourado);" id="tit-amanha">AMANHÃ</div>
+        <input type="text" id="input-amanha" placeholder="+ Add em Amanhã..." onkeypress="if(event.key==='Enter') addDia('amanha')" />
+        <div id="lista-amanha"></div>
+      </div>
+
+      <!-- DEPOIS DE AMANHÃ -->
+      <div class="col-dia" style="border-top: 3px solid var(--verde-elfico);">
+        <div class="dia-titulo" style="color: var(--verde-elfico);" id="tit-depois">DEPOIS</div>
+        <input type="text" id="input-depois" placeholder="+ Add..." onkeypress="if(event.key==='Enter') addDia('depois')" />
+        <div id="lista-depois"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD19AiSaJosyhNL8iz4J-D1mHgbu-MOKm4",
+      authDomain: "planejamentos-83b23.firebaseapp.com",
+      projectId: "planejamentos-83b23",
+      storageBucket: "planejamentos-83b23.firebasestorage.app",
+      messagingSenderId: "651538842400",
+      appId: "1:651538842400:web:5d0b45e7df8f2ac1f0cd45",
+      measurementId: "G-GK5XJ7FZN1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Cálculo dinâmico das 3 datas
+    const hojeObj = new Date();
+    const amanhaObj = new Date(); amanhaObj.setDate(hojeObj.getDate() + 1);
+    const depoisObj = new Date(); depoisObj.setDate(hojeObj.getDate() + 2);
+
+    const dataHoje = hojeObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
+    const dataAmanha = amanhaObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
+    const dataDepois = depoisObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
+
+    // Títulos dinâmicos com a data formatada
+    document.getElementById('tit-hoje').innerText = `HOJE (${hojeObj.toLocaleDateString('pt-BR', {weekday: 'short'}).toUpperCase()})`;
+    document.getElementById('tit-amanha').innerText = `AMANHÃ (${amanhaObj.toLocaleDateString('pt-BR', {weekday: 'short'}).toUpperCase()})`;
+    document.getElementById('tit-depois').innerText = `${depoisObj.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${depoisObj.toLocaleDateString('pt-BR', {weekday: 'short'}).toUpperCase()})`;
+
+    let preparacoes = [];
+    let dadosDias = { hoje: [], amanha: [], depois: [] };
+
+    // Escuta Preparações (Documento Único)
+    db.collection("curto_prazo").doc("preparacoes").onSnapshot(doc => {
+      preparacoes = (doc.exists && doc.data().itens) ? doc.data().itens : [];
+      renderPrep();
+    });
+
+    // Escuta Hoje (Lê direto do Ciclo Diário)
+    db.collection("ciclo_diario").doc(dataHoje).onSnapshot(doc => {
+      dadosDias.hoje = (doc.exists && doc.data().tarefas) ? doc.data().tarefas : [];
+      renderDia('hoje');
+    });
+
+    // Escuta Amanhã
+    db.collection("ciclo_diario").doc(dataAmanha).onSnapshot(doc => {
+      dadosDias.amanha = (doc.exists && doc.data().tarefas) ? doc.data().tarefas : [];
+      renderDia('amanha');
+    });
+
+    // Escuta Depois de Amanhã
+    db.collection("ciclo_diario").doc(dataDepois).onSnapshot(doc => {
+      dadosDias.depois = (doc.exists && doc.data().tarefas) ? doc.data().tarefas : [];
+      renderDia('depois');
+    });
+
+    // Funções de Preparações
+    async function addPrep() {
+      const input = document.getElementById('input-prep');
+      const val = input.value.trim();
+      if (!val) return;
+      preparacoes.push({ id: Date.now(), texto: val });
+      input.value = '';
+      await db.collection("curto_prazo").doc("preparacoes").set({ itens: preparacoes });
+    }
+
+    async function delPrep(id) {
+      preparacoes = preparacoes.filter(p => p.id !== id);
+      await db.collection("curto_prazo").doc("preparacoes").set({ itens: preparacoes });
+    }
+
+    function renderPrep() {
+      const container = document.getElementById('lista-prep');
+      if (preparacoes.length === 0) {
+        container.innerHTML = '<p style="font-size:0.75rem; color:#aaa; margin:0;">Nenhuma preparação pendente.</p>';
+        return;
+      }
+      let html = '';
+      preparacoes.forEach(p => {
+        html += `<div class="item-tf"><span>🌱 ${p.texto}</span><button class="btn-del" onclick="delPrep(${p.id})"><i class="fa-solid fa-xmark"></i></button></div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // Funções das Colunas de Dias
+    async function addDia(col) {
+      const input = document.getElementById('input-' + col);
+      const val = input.value.trim();
+      if (!val) return;
+
+      const targetDoc = col === 'hoje' ? dataHoje : (col === 'amanha' ? dataAmanha : dataDepois);
+      const nova = { id: Date.now(), texto: val, periodo: 'geral', concluida: false };
+
+      dadosDias[col].push(nova);
+      input.value = '';
+
+      await db.collection("ciclo_diario").doc(targetDoc).set({
+        data: targetDoc.replace(/-/g, '/'),
+        tarefas: dadosDias[col]
+      }, { merge: true });
+    }
+
+    async function delDia(col, id) {
+      const targetDoc = col === 'hoje' ? dataHoje : (col === 'amanha' ? dataAmanha : dataDepois);
+      dadosDias[col] = dadosDias[col].filter(t => t.id !== id);
+      await db.collection("ciclo_diario").doc(targetDoc).set({ tarefas: dadosDias[col] }, { merge: true });
+    }
+
+    function renderDia(col) {
+      const container = document.getElementById('lista-' + col);
+      const lista = dadosDias[col];
+
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<p style="font-size:0.72rem; color:#aaa; margin:0;">Sem itens.</p>';
+        return;
+      }
+
+      let html = '';
+      lista.forEach(t => {
+        html += `
+          <div class="item-tf ${t.concluida ? 'style="opacity:0.5; text-decoration:line-through;"' : ''}">
+            <span>${t.texto}</span>
+            <button class="btn-del" onclick="delDia('${col}', ${t.id})"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
